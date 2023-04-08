@@ -59,7 +59,7 @@ func Login(loginFlags *flags.LoginExecFlags) error {
 			log.Println("Unable to load cached credentials.")
 		}
 		if loginFlags.CredentialProcess {
-			err = PrintCredentialProcess(previousCreds)
+			err = printCredentialProcess(previousCreds)
 			if err != nil {
 				return err
 			}
@@ -142,7 +142,7 @@ func Login(loginFlags *flags.LoginExecFlags) error {
 
 	// print credential process if needed
 	if loginFlags.CredentialProcess {
-		err = PrintCredentialProcess(awsCreds)
+		err = printCredentialProcess(awsCreds)
 		if err != nil {
 			return err
 		}
@@ -263,6 +263,10 @@ func selectAwsRole(samlAssertion string, account *cfg.IDPAccount) (*saml2aws.AWS
 		return nil, errors.Wrap(err, "Error parsing AWS roles.")
 	}
 
+	fmt.Printf("awsroles123: %v\n", awsRoles)
+	fmt.Printf("765: %v\n", awsRoles[0])
+	fmt.Printf("account: %v\n", account)
+
 	return resolveRole(awsRoles, samlAssertion, account)
 }
 
@@ -287,6 +291,8 @@ func resolveRole(awsRoles []*saml2aws.AWSRole, samlAssertion string, account *cf
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing destination URL.")
 	}
+
+	fmt.Printf("aud690: %v\n", aud)
 
 	awsAccounts, err := saml2aws.ParseAWSAccounts(aud, samlAssertion)
 	if err != nil {
@@ -313,13 +319,20 @@ func resolveRole(awsRoles []*saml2aws.AWSRole, samlAssertion string, account *cf
 	return role, nil
 }
 
-func loginToStsUsingRole(account *cfg.IDPAccount, role *saml2aws.AWSRole, samlAssertion string) (*awsconfig.AWSCredentials, error) {
-
+func newSession(account *cfg.IDPAccount) (*session.Session, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: &account.Region,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session.")
+	}
+	return sess, nil
+}
+
+func loginToStsUsingRole(account *cfg.IDPAccount, role *saml2aws.AWSRole, samlAssertion string) (*awsconfig.AWSCredentials, error) {
+	sess, err := newSession(account)
+	if err != nil {
+		return nil, err
 	}
 
 	svc := sts.New(sess)
@@ -366,10 +379,10 @@ func saveCredentials(awsCreds *awsconfig.AWSCredentials, sharedCreds *awsconfig.
 	return nil
 }
 
-// CredentialsToCredentialProcess
+// credentialsToCredentialProcess
 // Returns a Json output that is compatible with the AWS credential_process
 // https://github.com/awslabs/awsprocesscreds
-func CredentialsToCredentialProcess(awsCreds *awsconfig.AWSCredentials) (string, error) {
+func credentialsToCredentialProcess(awsCreds *awsconfig.AWSCredentials) (string, error) {
 
 	type AWSCredentialProcess struct {
 		Version         int
@@ -395,10 +408,10 @@ func CredentialsToCredentialProcess(awsCreds *awsconfig.AWSCredentials) (string,
 
 }
 
-// PrintCredentialProcess Prints a Json output that is compatible with the AWS credential_process
+// printCredentialProcess Prints a Json output that is compatible with the AWS credential_process
 // https://github.com/awslabs/awsprocesscreds
-func PrintCredentialProcess(awsCreds *awsconfig.AWSCredentials) error {
-	jsonData, err := CredentialsToCredentialProcess(awsCreds)
+func printCredentialProcess(awsCreds *awsconfig.AWSCredentials) error {
+	jsonData, err := credentialsToCredentialProcess(awsCreds)
 	if err == nil {
 		fmt.Println(jsonData)
 	}

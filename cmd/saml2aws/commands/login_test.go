@@ -90,7 +90,7 @@ func TestCredentialsToCredentialProcess(t *testing.T) {
 	}
 	aws_json_expected_output := "{\"Version\":1,\"AccessKeyId\":\"someawsaccesskey\",\"SecretAccessKey\":\"somesecretkey\",\"SessionToken\":\"somesessiontoken\",\"Expiration\":\"2020-01-20T22:50:00Z\"}"
 
-	json, err := CredentialsToCredentialProcess(aws_creds)
+	json, err := credentialsToCredentialProcess(aws_creds)
 	assert.Empty(t, err)
 	assert.Equal(t, aws_json_expected_output, json)
 }
